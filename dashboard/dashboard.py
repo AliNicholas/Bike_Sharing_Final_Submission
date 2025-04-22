@@ -5,9 +5,9 @@ import seaborn as sns
 
 # Load data & mempersiapkan data
 df = pd.read_csv("dashboard/main_data.csv")
-df["date"] = pd.to_datetime(df["date"])
 df["hour"] = df["hour"].astype(str).str.zfill(2) + ":00"
-df["datetime"] = pd.to_datetime(df["date"].astype(str) + " " + df["hour"])
+df["datetime"] = pd.to_datetime(df["year"].astype(str) + "-" + df["month"] + "-01 " + df["hour"])
+df["date"] = df["datetime"].dt.date
 
 # konfigurasi
 st.set_page_config(page_title="🚲 Bike Sharing Dashboard", layout="wide")
@@ -29,7 +29,7 @@ with filter_col:
         st.error("atleast choose one weather condition!")
 
     # Checkbox - User Type
-    st.subheader("🧑‍🤝‍🧑 User Type")
+    st.subheader("🧑‍🧑 User Type")
     casual = st.checkbox("Casual", value=True)
     registered = st.checkbox("Registered", value=True)
     user_cols = []
@@ -78,7 +78,7 @@ with visual_col:
         weather_str = ", ".join(weather_selected)
         ax1.text(
             0.01,
-            0.98,  # ✅ posisi kiri atas
+            0.98,
             f"Weather: {weather_str}",
             fontsize=7,
             transform=ax1.transAxes,
@@ -90,27 +90,40 @@ with visual_col:
         st.pyplot(fig1)
 
 # overview plot
-st.header("Overview")
+st.header("📊 Exploratory Overview")
+
+# overview row 1
 overview1_col, overview2_col = st.columns(2)
-
 with overview1_col:
-    st.subheader("📌Rent per Hour Based-On Day Type")
-    avg_hour_by_day = df.groupby(["hour", "is_workingday"])["total_rent_count"].mean().unstack().sort_index()
-
-    fig1, ax1 = plt.subplots(figsize=(8, 4))
-    avg_hour_by_day.plot(ax=ax1, marker="o")
-    ax1.set_title("Average Rent per Hour\nWorking Day vs Holiday (2011–2012)", fontsize=11)
-    ax1.set_xlabel("Hour")
-    ax1.set_ylabel("Total Rent")
-    ax1.set_xticks(ticks=range(24))
-    ax1.set_xticklabels([f"{h:02d}:00" for h in range(24)], rotation=45)
-    ax1.grid(True)
-    ax1.legend(title="Working Day")
-    st.pyplot(fig1)
-
+    st.subheader("🕒 Rent per Hour: Workday vs Holiday")
+    avg_hour = df.groupby(["hour", "is_workingday"])["total_rent_count"].mean().unstack()
+    fig, ax = plt.subplots(figsize=(7, 4))
+    avg_hour.plot(ax=ax, marker="o")
+    ax.set_title("Average Rent per Hour\n(Workday vs Holiday)", fontsize=11)
+    ax.set_xlabel("Hour")
+    ax.set_ylabel("Rental Count")
+    ax.set_xticks(range(24))
+    ax.set_xticklabels([f"{h:02d}:00" for h in range(24)], rotation=45)
+    ax.legend(title="Day Type")
+    ax.grid(True)
+    st.pyplot(fig)
 
 with overview2_col:
-    st.subheader("📌Total Rent Based-On Weather Condition")
+    st.subheader("📈 Monthly Rental Trend: Casual vs Registered")
+    monthly = df.resample("M", on="datetime")[["casual", "registered"]].mean()
+    fig3, ax3 = plt.subplots(figsize=(8, 4))
+    monthly.plot(ax=ax3, marker="o")
+    ax3.set_title("Average Rental per Hour per Month", fontsize=11)
+    ax3.set_xlabel("Month")
+    ax3.set_ylabel("Rental Count")
+    ax3.grid(True)
+    st.pyplot(fig3)
+
+
+# overview row 2
+overview3_col, overview4_col = st.columns(2)
+with overview3_col:
+    st.subheader("🌧️ Weather Condition Impact")
     avg_weather = df.groupby("weather_condition")["total_rent_count"].mean().sort_values(ascending=False)
 
     fig2, ax2 = plt.subplots(figsize=(6, 4))
@@ -122,3 +135,20 @@ with overview2_col:
     ax2.set_xticklabels(avg_weather.index, rotation=45, ha="right")
     ax2.grid(axis="y")
     st.pyplot(fig2)
+
+
+with overview4_col:
+    st.subheader("🌡️ Rental Based on Temperature Zones")
+    df["temp_c"] = df["temp"] * 41
+    bins = [-1, 10, 20, 30, 50]
+    labels = ["Dingin", "Sejuk", "Hangat", "Panas"]
+    df["temp_zone"] = pd.cut(df["temp_c"], bins=bins, labels=labels)
+    temp_rental = df.groupby(["date", "temp_zone"])["total_rent_count"].sum().reset_index()
+    avg_temp = temp_rental.groupby("temp_zone")["total_rent_count"].mean()
+    fig4, ax4 = plt.subplots(figsize=(5.5, 4))
+    avg_temp.plot(kind="bar", color="coral", ax=ax4)
+    ax4.set_title("Avg Daily Rental by Temperature Zone")
+    ax4.set_xlabel("Temp Zone")
+    ax4.set_ylabel("Average Rental")
+    ax4.grid(axis="y")
+    st.pyplot(fig4)
