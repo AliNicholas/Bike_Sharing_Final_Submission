@@ -119,7 +119,7 @@ with plot_col1:
         ax.set_xticklabels(lbl, rotation=45)
         ax.set_title("Average Rent per Hour on Workdays vs Holidays (2011–2012)")
         ax.set_xlabel("Hour")
-        ax.set_ylabel("AVG Rental Count")
+        ax.set_ylabel("Average Rental Count")
         ax.grid(ls="--", alpha=0.4)
         ax.legend()
         plt.tight_layout()
@@ -135,11 +135,17 @@ with plot_col2:
         for col, lbl in [("rental_registered", "Registered"), ("rental_casual", "Casual")]:
             if col in eda3:
                 ax.plot(eda3["date"], eda3[col], marker="o", label=lbl)
-        ax.set_title("Monthly Average Rental Count per Hour (2011–2012)")
+        ax.set_title("Monthly Trends in Average Hourly Rentals (2011-2012)")
         ax.set_xlabel("Month")
-        ax.set_ylabel("Average Rental Count")
+        ax.set_ylabel("Average Hourly Rentals")
         ax.grid(ls="--", alpha=0.4)
         ax.legend()
+
+        peak_reg = eda3.loc[eda3["rental_registered"].idxmax()]
+        peak_cas = eda3.loc[eda3["rental_casual"].idxmax()]
+        ax.annotate(f"{peak_reg['rental_registered']:.0f}", xy=(peak_reg["date"], peak_reg["rental_registered"]), xytext=(0, 10), textcoords="offset points", ha="center")
+        ax.annotate(f"{peak_cas['rental_casual']:.0f}", xy=(peak_cas["date"], peak_cas["rental_casual"]), xytext=(0, 10), textcoords="offset points", ha="center")
+
         plt.xticks(rotation=45)
         plt.tight_layout()
         st.pyplot(fig)
