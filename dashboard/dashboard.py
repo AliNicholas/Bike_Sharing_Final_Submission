@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Load dataset & Preprocessing dataset (main_data.csv)
-df = pd.read_csv("main_data.csv")
+df = pd.read_csv("dashboard/main_data.csv")
 df["date"] = pd.to_datetime(df["date"])
 df["hour_int"] = df["hour"].str.slice(0, 2).astype(int)
 df.set_index("date", inplace=True)
